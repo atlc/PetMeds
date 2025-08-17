@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, HouseholdWithMembers } from '../types'
-import { authApi } from '../services/api'
+import { authApi, householdsApi } from '../services/api'
 
 interface AuthContextType {
   user: User | null
@@ -11,7 +11,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
@@ -46,14 +46,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authApi.googleLogin(idToken)
       
       // Store token
-      localStorage.setItem('petmeds_token', response.token)
+      localStorage.setItem('petmeds_token', response.data.token)
       
       // Update state
-      setUser(response.user)
-      setHouseholds(response.households)
-      
-      // Set auth header for future requests
-      authApi.setAuthToken(response.token)
+      setUser(response.data.user)
+      setHouseholds(response.data.households)
     } catch (error) {
       console.error('Login failed:', error)
       throw error
@@ -67,9 +64,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('petmeds_token')
     setUser(null)
     setHouseholds([])
-    
-    // Clear auth header
-    authApi.clearAuthToken()
   }
 
   const refreshUser = async () => {
@@ -80,14 +74,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return
       }
 
-      authApi.setAuthToken(token)
       const response = await authApi.getCurrentUser()
       
-      setUser(response.user)
+      setUser(response.data.user)
       
       // Get updated households
-      const householdsResponse = await authApi.getHouseholds()
-      setHouseholds(householdsResponse.households)
+      const householdsResponse = await householdsApi.getAll()
+      setHouseholds(householdsResponse.data.households)
     } catch (error) {
       console.error('Failed to refresh user:', error)
       // Token might be invalid, clear it

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { petsApi, medicationsApi } from '../services/api'
@@ -7,11 +7,10 @@ import {
   Plus, 
   Edit, 
   Trash2, 
+  PawPrint,
   Clock,
   Calendar,
-  AlertCircle,
-  CheckCircle,
-  XCircle
+  AlertCircle
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
@@ -19,11 +18,11 @@ import { format } from 'date-fns'
 const Medications = () => {
   const { households } = useAuth()
   const queryClient = useQueryClient()
+  const [selectedHousehold, setSelectedHousehold] = useState<any>(null)
+  const [selectedPet, setSelectedPet] = useState<any>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [selectedMedication, setSelectedMedication] = useState<any>(null)
-  const [selectedHousehold, setSelectedHousehold] = useState<any>(null)
-  const [selectedPet, setSelectedPet] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: '',
     dosage_amount: '',
@@ -40,7 +39,13 @@ const Medications = () => {
 
   const { data: petsData, isLoading: petsLoading } = useQuery(
     ['pets', selectedHousehold?.id],
-    () => selectedHousehold ? petsApi.getByHousehold(selectedHousehold.id) : Promise.resolve({ pets: [] }),
+    () => selectedHousehold ? petsApi.getByHousehold(selectedHousehold.id) : Promise.resolve({
+      data: { pets: [] },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any
+    }),
     {
       enabled: !!selectedHousehold,
       refetchOnWindowFocus: false,
@@ -49,12 +54,21 @@ const Medications = () => {
 
   const { data: medicationsData, isLoading: medicationsLoading } = useQuery(
     ['medications', selectedPet?.id],
-    () => selectedPet ? medicationsApi.getByPet(selectedPet.id) : Promise.resolve({ medications: [] }),
+    () => selectedPet ? medicationsApi.getByPet(selectedPet.id) : Promise.resolve({
+      data: { medications: [] },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any
+    }),
     {
       enabled: !!selectedPet,
       refetchOnWindowFocus: false,
     }
   )
+
+  const pets = petsData?.data?.pets || []
+  const medications = medicationsData?.data?.medications || []
 
   const createMedicationMutation = useMutation(
     medicationsApi.create,
@@ -175,9 +189,9 @@ const Medications = () => {
       case 'due':
         return <Clock className="h-4 w-4 text-yellow-600" />
       case 'taken':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <PawPrint className="h-4 w-4 text-green-600" />
       case 'skipped':
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <PawPrint className="h-4 w-4 text-red-600" />
       default:
         return <Clock className="h-4 w-4 text-gray-400" />
     }
@@ -208,8 +222,8 @@ const Medications = () => {
     setSelectedHousehold(households[0])
   }
 
-  if (!selectedPet && petsData?.pets.length > 0) {
-    setSelectedPet(petsData.pets[0])
+  if (!selectedPet && pets.length > 0) {
+    setSelectedPet(pets[0])
   }
 
   return (
@@ -267,14 +281,14 @@ const Medications = () => {
                 id="pet"
                 value={selectedPet?.id || ''}
                 onChange={(e) => {
-                  const pet = petsData?.pets.find(p => p.id === e.target.value)
+                  const pet = pets.find(p => p.id === e.target.value)
                   setSelectedPet(pet)
                 }}
                 className="input"
                 disabled={petsLoading}
               >
                 <option value="">Select a pet</option>
-                {petsData?.pets.map((pet: any) => (
+                {pets.map((pet: any) => (
                   <option key={pet.id} value={pet.id}>
                     {pet.name} ({pet.species})
                   </option>
@@ -293,7 +307,7 @@ const Medications = () => {
               Medications for {selectedPet.name}
             </h2>
             <span className="text-sm text-gray-500">
-              {medicationsData?.medications.length || 0} medications
+              {medications.length || 0} medications
             </span>
           </div>
 
@@ -301,7 +315,7 @@ const Medications = () => {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : medicationsData?.medications.length === 0 ? (
+          ) : medications.length === 0 ? (
             <div className="text-center py-12">
               <Pill className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No medications yet</h3>
@@ -316,7 +330,7 @@ const Medications = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {medicationsData?.medications.map((medication: any) => (
+              {medications.map((medication: any) => (
                 <div key={medication.id} className="card">
                   <div className="card-body">
                     <div className="flex items-start justify-between mb-4">

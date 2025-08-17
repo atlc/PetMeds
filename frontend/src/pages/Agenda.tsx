@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { agendaApi, medicationsApi } from '../services/api'
@@ -9,7 +9,7 @@ import {
   XCircle, 
   AlertTriangle,
   Plus,
-  Snooze
+  Clock3
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { format, addDays, startOfDay, endOfDay } from 'date-fns'
@@ -29,23 +29,28 @@ const Agenda = () => {
 
   const { data: agendaData, isLoading } = useQuery(
     ['agenda', selectedHousehold?.id, selectedDate],
-    () => {
-      if (!selectedHousehold) return Promise.resolve({ items: [] })
+    async () => {
+      if (!selectedHousehold) {
+        return { data: { items: [] } }
+      }
       
       const startDate = startOfDay(selectedDate)
       const endDate = endOfDay(selectedDate)
       
-      return agendaApi.getAgenda({
+      const response = await agendaApi.getAgenda({
         household_id: selectedHousehold.id,
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString()
       })
+      return response
     },
     {
       enabled: !!selectedHousehold,
       refetchOnWindowFocus: false,
     }
   )
+
+  const agendaItems = agendaData?.data?.items || []
 
   const logDoseMutation = useMutation(
     (data: { medicationId: string; logData: any }) => 
@@ -231,7 +236,7 @@ const Agenda = () => {
               Schedule for {format(selectedDate, 'MMMM d')}
             </h2>
             <span className="text-sm text-gray-500">
-              {agendaData?.items.length || 0} medications
+              {agendaItems.length || 0} medications
             </span>
           </div>
 
@@ -239,7 +244,7 @@ const Agenda = () => {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : agendaData?.items.length === 0 ? (
+          ) : agendaItems.length === 0 ? (
             <div className="text-center py-12">
               <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No medications scheduled</h3>
@@ -247,7 +252,7 @@ const Agenda = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {agendaData?.items.map((item: any) => (
+              {agendaItems.map((item: any) => (
                 <div key={item.id} className="card">
                   <div className="card-body">
                     <div className="flex items-start justify-between">
@@ -308,7 +313,7 @@ const Agenda = () => {
                               className="btn-warning btn-sm"
                               title="Snooze for 15 minutes"
                             >
-                              <Snooze className="h-4 w-4 mr-1" />
+                              <Clock3 className="h-4 w-4 mr-1" />
                               Snooze
                             </button>
                           </>

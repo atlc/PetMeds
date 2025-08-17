@@ -36,6 +36,8 @@ const Pets = () => {
     }
   )
 
+  const pets = petsData?.data?.pets || []
+
   const createPetMutation = useMutation(
     petsApi.create,
     {
@@ -202,7 +204,7 @@ const Pets = () => {
               Pets in {selectedHousehold.name}
             </h2>
             <span className="text-sm text-gray-500">
-              {petsData?.pets.length || 0} pets
+              {pets.length || 0} pets
             </span>
           </div>
 
@@ -210,7 +212,7 @@ const Pets = () => {
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             </div>
-          ) : petsData?.pets.length === 0 ? (
+          ) : pets.length === 0 ? (
             <div className="text-center py-12">
               <PawPrint className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No pets yet</h3>
@@ -225,7 +227,7 @@ const Pets = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {petsData?.pets.map((pet: any) => (
+              {pets.map((pet: any) => (
                 <div key={pet.id} className="card">
                   <div className="card-body">
                     <div className="flex items-start justify-between mb-4">

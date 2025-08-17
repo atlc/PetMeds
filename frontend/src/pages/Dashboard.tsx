@@ -32,7 +32,7 @@ const Dashboard = () => {
             start_date: startOfDay.toISOString(),
             end_date: endOfDay.toISOString()
           })
-          allAgendaItems.push(...response.items)
+          allAgendaItems.push(...response.data.items)
         } catch (error) {
           console.error(`Failed to get agenda for household ${household.id}:`, error)
         }

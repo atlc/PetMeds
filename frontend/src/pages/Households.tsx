@@ -35,6 +35,8 @@ const Households = () => {
     }
   )
 
+  const households = householdsData?.data?.households || []
+
   const createHouseholdMutation = useMutation(
     householdsApi.create,
     {
@@ -151,7 +153,7 @@ const Households = () => {
 
       {/* Households Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {householdsData?.households.map((household) => (
+        {households.map((household) => (
           <div key={household.id} className="card">
             <div className="card-header">
               <div className="flex items-center justify-between">
