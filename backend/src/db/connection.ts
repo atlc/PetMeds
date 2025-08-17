@@ -1,30 +1,47 @@
-import { Pool, PoolConfig } from 'pg';
+import { Pool, PoolClient } from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const dbConfig: PoolConfig = {
+/**
+ * PostgreSQL connection pool configuration
+ * Manages multiple database connections for efficient query handling
+ */
+const pool = new Pool({
+  // Database connection parameters
   host: process.env.DB_HOST || 'localhost',
   port: parseInt(process.env.DB_PORT || '5432'),
   database: process.env.DB_NAME || 'petmeds',
   user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD,
-  max: 20, // Maximum number of clients in the pool
-  idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-  connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-};
+  password: process.env.DB_PASSWORD || 'postgres',
+  
+  // Connection pool settings
+  max: parseInt(process.env.DB_MAX_CONNECTIONS || '20'),        // Maximum number of connections
+  idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'), // Close idle connections after 30s
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '2000'), // Connection timeout
+  
+  // SSL configuration for production environments
+  ssl: process.env.NODE_ENV === 'production' ? {
+    rejectUnauthorized: false // Allow self-signed certificates in production
+  } : false
+});
 
-export const pool = new Pool(dbConfig);
-
-// Handle pool errors
-pool.on('error', (err) => {
+/**
+ * Handle pool errors to prevent application crashes
+ * Logs errors and can implement retry logic if needed
+ */
+pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
   process.exit(-1);
 });
 
-// Test connection
-export async function testConnection(): Promise<boolean> {
+/**
+ * Test database connection
+ * Used during startup to verify database accessibility
+ * 
+ * @returns Promise<boolean> - True if connection successful, false otherwise
+ */
+export const testConnection = async (): Promise<boolean> => {
   try {
     const client = await pool.connect();
     await client.query('SELECT NOW()');
@@ -35,10 +52,32 @@ export async function testConnection(): Promise<boolean> {
     console.error('❌ Database connection failed:', error);
     return false;
   }
-}
+};
 
-// Graceful shutdown
-export async function closePool(): Promise<void> {
-  await pool.end();
-  console.log('Database pool closed');
-}
+/**
+ * Close all database connections in the pool
+ * Called during application shutdown for graceful cleanup
+ * 
+ * @returns Promise<void>
+ */
+export const closePool = async (): Promise<void> => {
+  try {
+    await pool.end();
+    console.log('✅ Database pool closed successfully');
+  } catch (error) {
+    console.error('❌ Error closing database pool:', error);
+  }
+};
+
+/**
+ * Get a client from the connection pool
+ * Use this for transactions or when you need a dedicated connection
+ * 
+ * @returns Promise<PoolClient> - Database client for manual connection management
+ */
+export const getClient = async (): Promise<PoolClient> => {
+  return await pool.connect();
+};
+
+// Export the configured pool for use in other modules
+export { pool };

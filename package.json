@@ -12,7 +12,13 @@
     "build:frontend": "cd frontend && npm run build",
     "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
     "db:setup": "cd backend && npm run db:setup",
-    "db:migrate": "cd backend && npm run db:migrate"
+    "db:migrate": "cd backend && npm run db:migrate",
+    "test": "concurrently \"npm run test:backend\" \"npm run test:frontend\"",
+    "test:backend": "cd backend && npm run test:coverage",
+    "test:frontend": "cd frontend && npm run test:coverage",
+    "test:watch": "concurrently \"npm run test:watch:backend\" \"npm run test:watch:frontend\"",
+    "test:watch:backend": "cd backend && npm run test:watch",
+    "test:watch:frontend": "cd frontend && npm run test:watch"
   },
   "keywords": ["pet", "medication", "pwa", "healthcare"],
   "author": "",
